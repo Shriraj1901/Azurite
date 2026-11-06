@@ -401,6 +401,31 @@ describe("Blob batch API", () => {
     assert.equal(resp.subResponsesFailedCount, 1);
   });
 
+  it("SubmitBatch within container scope - batch deleting blob in a container whose name starts with the scope container's name @loki @sql", async () => {
+    const blobBatchClient = containerClient.getBlobBatchClient();
+
+    const containerClientPrefixed = serviceClient.getContainerClient(`${containerName}-archive`);
+    await containerClientPrefixed.create();
+
+    try {
+      const blockBlobClientPrefixed = containerClientPrefixed.getBlockBlobClient(getUniqueName("blob"));
+      await blockBlobClientPrefixed.upload(content, content.length);
+
+      const sharedKeyCredential = (serviceClient as any).credential as StorageSharedKeyCredential;
+
+      // Submit batch request and verify response.
+      const resp = await blobBatchClient.deleteBlobs([blockBlobClientPrefixed.url], sharedKeyCredential, {});
+      assert.equal(resp.subResponses.length, 1);
+      assert.equal(resp.subResponsesSucceededCount, 0);
+      assert.equal(resp.subResponsesFailedCount, 1);
+
+      // The blob in the other container must not have been deleted.
+      assert.ok(await blockBlobClientPrefixed.exists());
+    } finally {
+      await containerClientPrefixed.delete();
+    }
+  });
+
   it("SubmitBatch with SAS token - batch deleting @loki @sql", async () => {
     const tmr = new Date();
     tmr.setDate(tmr.getDate() + 1);

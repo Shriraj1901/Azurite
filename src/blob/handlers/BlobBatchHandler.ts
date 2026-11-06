@@ -365,6 +365,9 @@ export class BlobBatchHandler {
 
     const blobBatchSubRequests: BlobBatchSubRequest[] = [];
 
+    // Empty for a service level batch, "<scope path>/" for a batch scoped to a container
+    const containerScopePrefix = subRequestPathPrefix === "" ? "" : subRequestPathPrefix.replace(/\/+$/, "") + "/";
+
     let previousOperation: Operation | undefined;
 
     for (const subRequest of subRequests) {
@@ -402,7 +405,9 @@ export class BlobBatchHandler {
 
       const requestPath = operationInfos[1].startsWith("/") ? operationInfos[1] : "/" + operationInfos[1];
 
-      if (!requestPath.startsWith(subRequestPathPrefix)) {
+      // Match whole path segments only, otherwise a container whose name starts with
+      // the scope container's name (e.g. "logs-archive" for "logs") would also be accepted.
+      if (!requestPath.startsWith(containerScopePrefix)) {
         throw new Error("Request from a different container");
       }
 
