@@ -2391,7 +2391,11 @@ export default class LokiBlobMetadataStore
           : metadata,
       accountName: destination.account,
       containerName: destination.container,
-      pageRangesInOrder: sourceBlob.pageRangesInOrder,
+      // The copy needs its own lists, later writes to the copy must not change the source
+      pageRangesInOrder:
+        sourceBlob.pageRangesInOrder === undefined
+          ? undefined
+          : sourceBlob.pageRangesInOrder.slice(),
       isCommitted: sourceBlob.isCommitted,
       leaseDurationSeconds:
         destBlob !== undefined ? destBlob.leaseDurationSeconds : undefined,
@@ -2400,7 +2404,10 @@ export default class LokiBlobMetadataStore
         destBlob !== undefined ? destBlob.leaseExpireTime : undefined,
       leaseBreakTime:
         destBlob !== undefined ? destBlob.leaseBreakTime : undefined,
-      committedBlocksInOrder: sourceBlob.committedBlocksInOrder,
+      committedBlocksInOrder:
+        sourceBlob.committedBlocksInOrder === undefined
+          ? undefined
+          : sourceBlob.committedBlocksInOrder.slice(),
       persistency: sourceBlob.persistency,
       blobTags:
         options.blobTagsString === undefined
@@ -2595,7 +2602,11 @@ export default class LokiBlobMetadataStore
           : metadata,
       accountName: destination.account,
       containerName: destination.container,
-      pageRangesInOrder: sourceBlob.pageRangesInOrder,
+      // The copy needs its own lists, later writes to the copy must not change the source
+      pageRangesInOrder:
+        sourceBlob.pageRangesInOrder === undefined
+          ? undefined
+          : sourceBlob.pageRangesInOrder.slice(),
       isCommitted: sourceBlob.isCommitted,
       leaseDurationSeconds:
         destBlob !== undefined ? destBlob.leaseDurationSeconds : undefined,
@@ -2604,7 +2615,10 @@ export default class LokiBlobMetadataStore
         destBlob !== undefined ? destBlob.leaseExpireTime : undefined,
       leaseBreakTime:
         destBlob !== undefined ? destBlob.leaseBreakTime : undefined,
-      committedBlocksInOrder: sourceBlob.committedBlocksInOrder,
+      committedBlocksInOrder:
+        sourceBlob.committedBlocksInOrder === undefined
+          ? undefined
+          : sourceBlob.committedBlocksInOrder.slice(),
       persistency: sourceBlob.persistency,
       blobTags:
         options.copySourceTags === Models.BlobCopySourceTags.COPY

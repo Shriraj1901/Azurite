@@ -401,6 +401,45 @@ describe("PageBlobAPIs", () => {
     assert.equal(await bodyToString(page2, 512), "b".repeat(512));
   });
 
+  it("uploadPages to a copied page blob should not change the source blob @loki", async () => {
+    await pageBlobClient.create(1024);
+    await pageBlobClient.uploadPages("a".repeat(512), 0, 512);
+
+    const copiedPageBlobClient = containerClient.getPageBlobClient(
+      getUniqueName("copiedpageblob")
+    );
+    const poller = await copiedPageBlobClient.beginCopyFromURL(
+      pageBlobClient.url
+    );
+    await poller.pollUntilDone();
+
+    await copiedPageBlobClient.uploadPages("b".repeat(512), 0, 512);
+
+    const source = await pageBlobClient.download(0, 512);
+    assert.equal(await bodyToString(source, 512), "a".repeat(512));
+    const copy = await copiedPageBlobClient.download(0, 512);
+    assert.equal(await bodyToString(copy, 512), "b".repeat(512));
+  });
+
+  it("uploadPages to a blob restored from a snapshot should not change the snapshot @loki", async () => {
+    await pageBlobClient.create(1024);
+    await pageBlobClient.uploadPages("a".repeat(512), 0, 512);
+    const snapshotResponse = await pageBlobClient.createSnapshot();
+    const snapshotClient = pageBlobClient.withSnapshot(
+      snapshotResponse.snapshot!
+    );
+
+    const poller = await pageBlobClient.beginCopyFromURL(snapshotClient.url);
+    await poller.pollUntilDone();
+
+    await pageBlobClient.uploadPages("c".repeat(512), 0, 512);
+
+    const snapshot = await snapshotClient.download(0, 512);
+    assert.equal(await bodyToString(snapshot, 512), "a".repeat(512));
+    const restored = await pageBlobClient.download(0, 512);
+    assert.equal(await bodyToString(restored, 512), "c".repeat(512));
+  });
+
   it("uploadPages should work with sequence number conditions @loki", async () => {
     await pageBlobClient.create(1024);
 

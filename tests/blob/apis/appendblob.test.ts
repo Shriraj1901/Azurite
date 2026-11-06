@@ -648,6 +648,27 @@ describe("AppendBlobAPIs", () => {
     assert.deepEqual(response.contentMD5, await getMD5FromString("def"));
   });
 
+  it("Appending to a copied append blob should not change the source blob @loki", async () => {
+    await appendBlobClient.create();
+    await appendBlobClient.appendBlock("x", 1);
+
+    const copiedAppendBlobClient = containerClient.getAppendBlobClient(
+      getUniqueName("copiedappendblob")
+    );
+    const poller = await copiedAppendBlobClient.beginCopyFromURL(
+      appendBlobClient.url
+    );
+    await poller.pollUntilDone();
+
+    await copiedAppendBlobClient.appendBlock("y", 1);
+    await appendBlobClient.appendBlock("z", 1);
+
+    const source = await appendBlobClient.download(0);
+    assert.deepStrictEqual(await bodyToString(source, 2), "xz");
+    const copy = await copiedAppendBlobClient.download(0);
+    assert.deepStrictEqual(await bodyToString(copy, 2), "xy");
+  });
+
   it("Append block with invalid blob type should not work @loki", async () => {
     const pageBlobClient = appendBlobClient.getPageBlobClient();
     await pageBlobClient.create(512);
